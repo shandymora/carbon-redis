@@ -1,0 +1,44 @@
+{
+	"server": {
+		"http": {
+			"port": [ 8089 ]
+		},
+		"tcp": {
+			"port": [ 2023 ]
+		},
+		"cluster": {
+			"heartbeat":		10000
+		}
+	},
+	"client": {
+		"statsd": {
+			"enabled": false,
+			"server" : "lmn-corp-puppetdev005.corp.lastminute.com",
+    		"prefix" : "lmn.corp.application.pcioob_mon.red-timestore_dev.instance"
+		},
+		"redis": {
+			"server":	"lmn-corp-mon001.corp.lastminute.com",
+			"port":		6379,
+			"db":		3
+		}
+	},
+	"app": {
+		"whitelist": [
+			"^lmn\\..*",
+			"^servers\\..*"
+		],
+		"blacklist": [
+			
+		],
+		"schema": [
+			{
+				"pattern": 		"^servers\\.lmn-corp-mon001\\..*",
+				"retentions":	"60s:2h"
+			},
+			{
+				"pattern": 		"^servers\\.lmn-corp-mon002\\..*",
+				"retentions":	"60s:1h,5m:1d"
+			}
+		]
+	}
+}
