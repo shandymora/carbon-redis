@@ -4,7 +4,7 @@
 			"port": [ 8089 ]
 		},
 		"tcp": {
-			"port": [ 2023 ]
+			"port": [ 2003 ]
 		}
 	},
 	"client": {
@@ -14,11 +14,11 @@
     		"prefix" : "lmn.corp.application.pcioob_mon.red-timestore_dev.instance"
 		},
 		"redis": {
-		"lmn-corp-mon001": {
-				"server":	"lmn-corp-mon001.corp.lastminute.com",
+		  "redis01": {
+				"server":	"redis01.shandymora.com",
 				"port":		6379,
 				"db":		3, 
-				"slots":	[ "0-8191" ],
+				"slots":	[ "0-16383" ],
 				"slot_default":	true,
 				"config": [
 					{
@@ -31,24 +31,8 @@
 					}
 				]
 					
-			},
-			"lmn-corp-mon002": {
-				"server":	"lmn-corp-mon002.corp.lastminute.com",
-				"port":		6379,
-				"db":		3,
-				"slots":	[ "8192-16383" ],
-				"slot_default":	false,
-				"config": [
-					{
-						"parameter":	"zset-max-ziplist-entries",
-						"value":		3000
-					},
-					{
-						"parameter":	"zset-max-ziplist-value",
-						"value":		256
-					}
-				]
 			}
+			
 		}
 	},
 	"app": {
@@ -56,11 +40,12 @@
 		"slot_count":			16384,
 		"cluster": {
 			"heartbeat":		10000,
-			"nodes":			[ "lmn-corp-mon002" ]
+			"nodes":			[ "redis01" ]
 		},
 		"whitelist": [
 			"^lmn\\..*",
-			"^servers\\..*"
+			"^servers\\..*",
+			"^collectd\\..*"
 		],
 		"blacklist": [
 			
@@ -76,7 +61,7 @@
 			}
 		],
 		"schema_default": {
-			"retentions":		[ "60s:4h", "5m:1d" ]
+			"retentions":		[ "60s:12h", "5m:2d" ]
 		}
 	}
 }
