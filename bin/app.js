@@ -302,7 +302,7 @@ function lookup_schema(key, done) {
 	});
 		
 }
-
+/*
 function write_to_redis(key, payload) {
 	
 	// Compute hash to determine slot number
@@ -325,7 +325,7 @@ function write_to_redis(key, payload) {
 	}
 		
 }
-
+*/
 function isMaster(node, done) {
 	client.httpConn(
 		{
