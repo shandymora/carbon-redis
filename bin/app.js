@@ -57,7 +57,7 @@ function init_schemas() {
 		var retentions_s = [];
 		schema.retentions.forEach( function(retention){
 			
-			period_string_to_seconds(retention, function(retention_s) {
+			app_utils.period_string_to_seconds(retention, function(retention_s) {
 				retentions_s.push(retention_s);
 			});
 				
@@ -80,7 +80,7 @@ function init_schemas() {
 	// default schema
 	var retentions_s = [];
 	config.settings.app.schema_default.retentions.forEach( function(retention){
-		period_string_to_seconds(retention, function(retention_s) {
+		app_utils.period_string_to_seconds(retention, function(retention_s) {
 			retentions_s.push(retention_s);
 		});
 	});
@@ -99,7 +99,7 @@ function init_schemas() {
 		}
 	);
 }
-
+/*
 function period_string_to_seconds (sPeriod, done) {
 	var pattern = new RegExp(/^([0-9]+)([s,m,h,d,y]):([0-9]+)([s,m,h,d,y])$/);
 	
@@ -156,7 +156,7 @@ function period_string_to_seconds (sPeriod, done) {
 		}
 	});
 }
-
+*/
 function init_slot_lookup(redis_config) {
 	
 	if ( config.health.cluster.is_master ) {

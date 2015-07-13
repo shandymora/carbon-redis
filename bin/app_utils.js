@@ -192,8 +192,64 @@ function write_to_redis(key, payload) {
 	}
 	
 }
-
+function period_string_to_seconds (sPeriod, done) {
+	var pattern = new RegExp(/^([0-9]+)([s,m,h,d,y]):([0-9]+)([s,m,h,d,y])$/);
+	
+	utility.matchRegexp( sPeriod, pattern, function(matched, matches) {
+		if ( matched ) {
+			
+			// Calculate interval in seconds
+			switch(matches[2]) {
+				case 's':
+					var interval = parseInt(matches[1]) * 1;
+					break;
+				case 'm':
+					var interval = parseInt(matches[1]) * 60;
+					break;
+				case 'h':
+					var interval = parseInt(matches[1]) * 3600;
+					break;
+				case 'd':
+					var interval = parseInt(matches[1]) * 86400;
+					break;
+				case 'y':
+					var interval = parseInt(matches[1]) * 31536000;
+					break;
+				default:
+					// No match return null
+			}
+			
+			// Calculate retention in seconds
+			switch(matches[4]) {
+				case 's':
+					var retention = parseInt(matches[3]) * 1;
+					break;
+				case 'm':
+					var retention = parseInt(matches[3]) * 60;
+					break;
+				case 'h':
+					var retention = parseInt(matches[3]) * 3600;
+					break;
+				case 'd':
+					var retention = parseInt(matches[3]) * 86400;
+					break;
+				case 'y':
+					var retention = parseInt(matches[3]) * 31536000;
+					break;
+				default:
+					// No match return null
+			}
+			
+			if ( interval && retention ) {
+				done(interval+':'+retention);
+			}
+		} else {
+			console.log('  no match.');
+		}
+	});
+}
 
 exports.aggregate_datapoints = aggregate_datapoints;
 exports.read_from_redis = read_from_redis;
 exports.write_to_redis = write_to_redis;
+exports.period_string_to_seconds = period_string_to_seconds;
