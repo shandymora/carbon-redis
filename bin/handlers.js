@@ -160,7 +160,6 @@ function metrics( response, request ) {
 		var isJSON = false;
 		try {
 			var requestDataQuery = $.parseJSON(requestData.toString());
-			console.log("request body isJSON");
 			isJSON = true;
 
 		} catch (error) {
@@ -171,7 +170,6 @@ function metrics( response, request ) {
 		if ( isJSON == false ) {
 	    	try {
 	    		var requestDataQuery = querystring.parse(requestData);
-	    		console.log('request body is queryString');
 	    	} catch (err) {
 	    		if (logger.logLevel.error == true) { logger.log.error('Error parsing requestData query params'); }
 				response.writeHead(500);
@@ -427,15 +425,15 @@ function metrics( response, request ) {
 		/*
 		 * 	Looks up the schema, matching key to regex_string pattern.
 		 * 	Returns schema retentions in seconds array ( schema.rententions_s )
+		 * 
+		 * 	Merge this function with the one in app.js.
 		 */
 		function lookup_schema_retention(done) {
 			var breakLoop = false;
 			config.app_data.schemas.forEach( function(schema) {
-				console.log('Checking schema pattern: '+schema.pattern);
 				if (!breakLoop) {
 					utility.matchRegexp( key, schema.pattern, function(matched, matches) {
 						if ( matched ) {
-							console.log("    MATCHED: "+schema.retentions_s);
 							breakLoop = true;
 							done(schema.retentions_s);
 						}

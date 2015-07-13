@@ -284,6 +284,8 @@ function parse_data(data) {
 /*
  * 	retentions_s is sorted by interval in seconds.
  * 	first element in teh array will be the smallest interval which we should use.
+ * 
+ * 	merge this function with the one in handlers.js
  */
 function lookup_schema(key, done) {
 	var breakLoop = false;
