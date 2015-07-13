@@ -397,7 +397,7 @@ function aggregate_metrics() {
 													if (logger.logLevel.error == true) { logger.log.error('Error reading from Redis server: '+server); }
 												}
 												else {
-													console.log('deleted: '+reply+' datapoints from: '+key+':'+interval);
+									//				console.log('deleted: '+reply+' datapoints from: '+key+':'+interval);
 												}
 											});
 										}

@@ -160,6 +160,7 @@ function metrics( response, request ) {
 		var isJSON = false;
 		try {
 			var requestDataQuery = $.parseJSON(requestData.toString());
+			console.log("request body isJSON");
 			isJSON = true;
 
 		} catch (error) {
@@ -170,6 +171,7 @@ function metrics( response, request ) {
 		if ( isJSON == false ) {
 	    	try {
 	    		var requestDataQuery = querystring.parse(requestData);
+	    		console.log('request body is queryString');
 	    	} catch (err) {
 	    		if (logger.logLevel.error == true) { logger.log.error('Error parsing requestData query params'); }
 				response.writeHead(500);
@@ -214,36 +216,43 @@ function metrics( response, request ) {
     });
     
 	function get_metrics(key, from, until) {
+		console.log("requested - key: "+key+", from: "+from+", until: "+until);
 		// Compute slot
 		var slot_payload = utility.crc16(key) % parseInt(config.settings.app.slot_count);
 	
 		var consolidated_datapoints = [];
-		var consolidated_interval;
+		var consolidated_interval = null;
 		
 		var now = utility.timeInSecs() - 1;
 		var sum_retention = 0;
+		
 		
 		// Lookup schema retention interval, just takes first one for now.
 		lookup_schema_retention( function(retentions) {
 	
 			/*
-			 * 		For each retention, work out oldest timestamp
+			 * 		For each retention, work out some timestamps and intervals
 			 */
 			var retention_count = 0;
+			var e_retentions = [];			// enhanced retention information
+			
 			retentions.forEach( function(retention) {
+				var e_retention = {};
 				
-				var interval = 	parseInt(retention.split(":").toString().split(",")[0]);
-				var range = 	parseInt(retention.split(":").toString().split(",")[1]);
+				e_retention.interval = 	parseInt(retention.split(":").toString().split(",")[0]);
+				e_retention.range = 	parseInt(retention.split(":").toString().split(",")[1]);
 				
-				var newest_timestamp = now - sum_retention;
-				var oldest_timestamp = newest_timestamp - range;
-				sum_retention += range;
-								
+				e_retention.newest_timestamp = now - sum_retention;
+				e_retention.oldest_timestamp = e_retention.newest_timestamp - e_retention.range;
+				sum_retention += e_retention.range;
+				
+				e_retentions.push(e_retention);
+							
 				// If theres only one retention config, 
 				if ( retentions.length == 1 ) {
 					
 					// Set consolidated_interval to this retention interval
-					consolidated_interval = interval;
+					consolidated_interval = e_retention.interval;
 					
 					// Prefill consolidated_datapoints with null values and timestamps
 					var consolidated_datapoints_length = Math.ceil( (until - from)/consolidated_interval);
@@ -253,10 +262,10 @@ function metrics( response, request ) {
 				}
 				
 				// Find retention period to aggregate datapoints by
-				if ( from >= oldest_timestamp && from < newest_timestamp && consolidated_interval == null ) {
+				if ( from >= e_retention.oldest_timestamp && from < e_retention.newest_timestamp && consolidated_interval == null ) {
 					
 					// Set consolidated_interval to this retention interval
-					consolidated_interval = interval;
+					consolidated_interval = e_retention.interval;
 					
 					// Prefill consolidated_datapoints with null values and timestamps
 					var consolidated_datapoints_length = Math.ceil( (until - from)/consolidated_interval);
@@ -264,19 +273,36 @@ function metrics( response, request ) {
 						consolidated_datapoints[count] = [null, from + (count * consolidated_interval)];
 					}
 				}
+			});
+			
+			/*
+			 * 	Did we setup consolidated data and intervals, if not we should use the longest (last one)
+			 * 
+			 */
+			if ( consolidated_interval == null ) {
+				// Set consolidated_interval to this retention interval
+				consolidated_interval = parseInt(retentions[retentions.length-1].split(":").toString().split(",")[0]);
 				
+				// Prefill consolidated_datapoints with null values and timestamps
+				var consolidated_datapoints_length = Math.ceil( (until - from)/consolidated_interval);
+				for ( var count = 0; count < consolidated_datapoints_length; count++) {
+					consolidated_datapoints[count] = [null, from + (count * consolidated_interval)];
+				}
+			}
+			e_retentions.forEach( function(e_retention) {
+					
 				// Are we requesting data from this retention period?
-				if ( from < newest_timestamp ) {
+				if ( from < e_retention.newest_timestamp ) {
 					make_request({
-						interval:			parseInt(interval),
-						range:				parseInt(range),
-						newest_timestamp:	parseInt(newest_timestamp),
-						oldest_timestamp:	parseInt(oldest_timestamp)
+						interval:			parseInt(e_retention.interval),
+						range:				parseInt(e_retention.range),
+						newest_timestamp:	parseInt(e_retention.newest_timestamp),
+						oldest_timestamp:	parseInt(e_retention.oldest_timestamp)
 					}, function() {
 						
 						retention_count += 1;
 						
-						if ( retention_count == retentions.length ) {
+						if ( retention_count == e_retentions.length ) {
 							// Processed all retentions
 							
 				      		// Build payload from consolidated_datapoints
@@ -405,18 +431,18 @@ function metrics( response, request ) {
 		function lookup_schema_retention(done) {
 			var breakLoop = false;
 			config.app_data.schemas.forEach( function(schema) {
+				console.log('Checking schema pattern: '+schema.pattern);
 				if (!breakLoop) {
 					utility.matchRegexp( key, schema.pattern, function(matched, matches) {
 						if ( matched ) {
+							console.log("    MATCHED: "+schema.retentions_s);
 							breakLoop = true;
-					//		done(schema.retentions_s[0].split(":").toString().split(",")[0]);
 							done(schema.retentions_s);
 						}
 					});
 				}
 					
 			});
-				
 		}
 
 	}

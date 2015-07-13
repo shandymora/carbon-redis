@@ -10,8 +10,8 @@
 	"client": {
 		"statsd": {
 			"enabled": false,
-			"server" : "lmn-corp-graphite001.corp.lastminute.com",
-    		"prefix" : "lmn.corp.application.pcioob_mon.red-timestore_dev.instance"
+			"server" : "graphite.shandymora.com",
+    		"prefix" : "red-timestore_dev.instance"
 		},
 		"redis": {
 		  "redis01": {
@@ -40,12 +40,12 @@
 		"slot_count":			16384,
 		"cluster": {
 			"heartbeat":		10000,
-			"nodes":			[ "redis01" ]
+			"nodes":			[ "genesis" ]
 		},
 		"whitelist": [
 			"^lmn\\..*",
 			"^servers\\..*",
-			"^collectd\\..*"
+			"^collectd.*"
 		],
 		"blacklist": [
 			
