@@ -103,7 +103,7 @@ function init_schemas() {
 function init_slot_lookup(redis_config) {
 	
 	if ( config.health.cluster.is_master ) {
-		if (config.app_data.logger.logLevel.info == true) { config.app_data.logger.log.info('Initializing Slots'); }
+		if (logger.logLevel.info == true) { config.app_data.logger.log.info('Initializing Slots'); }
 		for ( var server in redis_config ) {
 			redis_config[server].slots.forEach( function(slots) {
 				
