@@ -287,7 +287,6 @@ function metrics( response, request ) {
 					consolidated_datapoints[count] = [null, from + (count * consolidated_interval)];
 				}
 			}
-			console.log("requested - key: "+key+", from: "+from+", until: "+until+", interval: "+consolidated_interval);
 			e_retentions.forEach( function(e_retention) {
 					
 				// Are we requesting data from this retention period?
