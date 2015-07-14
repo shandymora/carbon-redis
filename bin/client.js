@@ -338,7 +338,7 @@ function start_redis_clients(oSettings, callback) {
 		for (var name in oSettings.client.redis) {
 			
 			/*
-			 * 	Check if already server already connected
+			 * 	Check if server already connected
 			 */
 			if ( name in config.app_data.redis_clients ) {
 				name_count += 1;
