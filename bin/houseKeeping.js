@@ -179,7 +179,7 @@ function init_schemas() {
 		var retentions_s = [];
 		schema.retentions.forEach( function(retention){
 			
-			period_string_to_seconds(retention, function(retention_s) {
+			app_utils.period_string_to_seconds(retention, function(retention_s) {
 				retentions_s.push(retention_s);
 			});
 				
@@ -202,7 +202,7 @@ function init_schemas() {
 	// default schema
 	var retentions_s = [];
 	config.settings.app.schema_default.retentions.forEach( function(retention){
-		period_string_to_seconds(retention, function(retention_s) {
+		app_utils.period_string_to_seconds(retention, function(retention_s) {
 			retentions_s.push(retention_s);
 		});
 	});
@@ -221,7 +221,7 @@ function init_schemas() {
 		}
 	);
 }
-
+/*
 function period_string_to_seconds (sPeriod, done) {
 	var pattern = new RegExp(/^([0-9]+)([s,m,h,d,y]):([0-9]+)([s,m,h,d,y])$/);
 	
@@ -278,7 +278,7 @@ function period_string_to_seconds (sPeriod, done) {
 		}
 	});
 }
-
+*/
 function aggregate_metrics() {
 	
 	
@@ -309,7 +309,13 @@ function aggregate_metrics() {
 		      				items.splice(item_index, 1);
 		      			} else {
 		      				var item_elements = item.split(":");
-		      				process_metric(item_elements[0], item_elements[1]);
+		      				
+		      				/*
+		      				 * 	Remove slot prefix and interval postfix from key
+		      				 */
+		      				var key = item_elements[0].split(":")[1];
+		      				process_metric(key, item_elements[1]);
+		      		//		process_metric(item_elements[0], item_elements[1]);
 		      			}
 		      		});
 		      		
