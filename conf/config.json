@@ -36,7 +36,7 @@
 		}
 	},
 	"app": {
-		"auto_reload_config":	false,
+		"auto_reload_config":	true,
 		"slot_count":			16384,
 		"cluster": {
 			"heartbeat":		10000,
