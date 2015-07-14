@@ -214,7 +214,7 @@ function metrics( response, request ) {
     });
     
 	function get_metrics(key, from, until) {
-		console.log("requested - key: "+key+", from: "+from+", until: "+until);
+		
 		// Compute slot
 		var slot_payload = utility.crc16(key) % parseInt(config.settings.app.slot_count);
 	
@@ -287,6 +287,7 @@ function metrics( response, request ) {
 					consolidated_datapoints[count] = [null, from + (count * consolidated_interval)];
 				}
 			}
+			console.log("requested - key: "+key+", from: "+from+", until: "+until+", interval: "+consolidated_interval);
 			e_retentions.forEach( function(e_retention) {
 					
 				// Are we requesting data from this retention period?
@@ -353,8 +354,13 @@ function metrics( response, request ) {
 					
 					// Increment statsD counter
 					utility.statsd.client.increment(utility.statsd.prefix+'app.redis.'+server+'.read');
-						
-					app_utils.read_from_redis(server, key, retention_config.interval, from, until, function(server_datapoints) {
+					
+					/*
+					 * 	Pass lookup key of slot_payload.toString()+':'+key+':'+interval
+					 * 
+					 */
+					app_utils.read_from_redis(server, slot_payload.toString()+':'+key+':'+retention_config.interval, from, until, function(server_datapoints) {
+			//		app_utils.read_from_redis(server, key, retention_config.interval, from, until, function(server_datapoints) {
 						
 						// Merge server_datapoints with all other returned data arrays
 						merge_datapoints(server_datapoints, retention_config);
@@ -494,7 +500,7 @@ function metricnames( response, request ) {
 		      				items.splice(item_index, 1);
 		      			} else {
 		      				var item_elements = item.split(":");
-		      				metrics.push(item_elements[0]);
+		      				metrics.push(item_elements[1]);
 		      			}
 		      		});
 		      		
