@@ -93,6 +93,7 @@ utility.readConfig(configFile, function (settings) {
 			if (logger.logLevel.info == true) { logger.log.info('Refreshing config'); }
 			// Read in config file
 			utility.readConfig(configFile);
+			client.start_redis_clients(config.settings);
 		}, 60000);
 	}
 		
