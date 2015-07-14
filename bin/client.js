@@ -278,6 +278,7 @@ function redisConn (oSettings, ready_callback) {
 	this.client.on('ready', function() {
 		if (logger.logLevel.info == true) { logger.log.info('Connected to Redis server: '+oSettings.server); }
 		self.connected = true;
+		self.error = false;
 		self.setOptions(function() {
 			if ( ready_callback ) { ready_callback(); }
 		});
@@ -336,13 +337,38 @@ function start_redis_clients(oSettings, callback) {
 		var name_count = 1;
 		for (var name in oSettings.client.redis) {
 			
-			config.app_data.redis_clients[name] = new redisConn(oSettings.client.redis[name], function() {
-				if ( name_count == Object.keys(oSettings.client.redis).length ) {
-					if (logger.logLevel.info == true) { logger.log.info('Finished connecting to all Redis servers.'); }
-					if ( callback ) { callback(); }
-				}
+			/*
+			 * 	Check if already server already connected
+			 */
+			if ( name in config.app_data.redis_clients ) {
 				name_count += 1;
-			});
+				/*
+				 * 	No connection and is erroring
+				 * 	Delete existing conenction and re-connect
+				 */
+				if ( !(config.app_data.redis_clients[name].connected) &&  (config.app_data.redis_clients[name].error)) {
+					delete config.app_data.redis_clients[name];
+					config.app_data.redis_clients[name] = new redisConn(oSettings.client.redis[name], function() {
+						if ( name_count == Object.keys(oSettings.client.redis).length ) {
+							if (logger.logLevel.info == true) { logger.log.info('Finished connecting to all Redis servers.'); }
+							if ( callback ) { callback(); }
+						}
+						name_count += 1;
+					});
+				}
+			/*
+			 * 	No connection exists, so create one
+			 */
+			} else {
+				config.app_data.redis_clients[name] = new redisConn(oSettings.client.redis[name], function() {
+					if ( name_count == Object.keys(oSettings.client.redis).length ) {
+						if (logger.logLevel.info == true) { logger.log.info('Finished connecting to all Redis servers.'); }
+						if ( callback ) { callback(); }
+					}
+					name_count += 1;
+				});
+			}
+				
 		}
 		
 	}
