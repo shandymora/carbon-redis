@@ -125,12 +125,14 @@ function aggregate_datapoints(datapoints, method, agg_factor) {
  * 		until:		integer:	unix timestamp (in seconds)
  * 		done:		function:	callback
  */
-function read_from_redis(server, key, interval, from, until, done) {
+function read_from_redis(server, key, from, until, done) {
+//function read_from_redis(server, key, interval, from, until, done) {
 	
 	// Are we connected to the Redis Server
 	if ( config.app_data.redis_clients[server].connected ) {
 		
-		config.app_data.redis_clients[server].client.zrangebyscore([key+':'+interval, from, until], function(err, reply) {
+		config.app_data.redis_clients[server].client.zrangebyscore([key, from, until], function(err, reply) {
+	//	config.app_data.redis_clients[server].client.zrangebyscore([key+':'+interval, from, until], function(err, reply) {
 			var datapoints = [];
 			
 			if (err) { 
@@ -168,6 +170,11 @@ function write_to_redis(key, payload) {
 	// Compute hash to determine slot number
 	var slot_payload = utility.crc16(key) % parseInt(config.settings.app.slot_count);
 
+	/*
+	 * 	prefix slot to payload[0]
+	 * 	payload[0] = slot_payload.toString() + ':' + payload[0]
+	 */
+	payload[0] = slot_payload.toString() + ':' + payload[0];
 	if ( slot_payload.toString() in config.app_data.slot_lookup ) {
 		config.app_data.slot_lookup[slot_payload.toString()].servers.forEach( function(server) {
 			write_to_server(server);
@@ -192,6 +199,7 @@ function write_to_redis(key, payload) {
 	}
 	
 }
+
 function period_string_to_seconds (sPeriod, done) {
 	var pattern = new RegExp(/^([0-9]+)([s,m,h,d,y]):([0-9]+)([s,m,h,d,y])$/);
 	
