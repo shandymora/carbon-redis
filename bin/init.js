@@ -62,13 +62,11 @@ if ( opt.options.loglevel ) {
 }
 
 if ( opt.options.config ) {
-	var configFile = opt.options.config;
-} else {
-	var configFile = currentDir+'/../conf/config.json';
-}
+	config.configFile = opt.options.config;
+} 
 
 // Read in config file
-utility.readConfig(configFile, function (settings) {
+utility.readConfig(config.configFile, function (settings) {
 
 	// memory monitoring
 	
@@ -87,14 +85,4 @@ utility.readConfig(configFile, function (settings) {
 	// Start app
 	app.start(settings);
 	
-	if ( settings.app.auto_reload_config == true ) {
-		// Refresh config
-		setInterval( function() {
-			if (logger.logLevel.info == true) { logger.log.info('Refreshing config'); }
-			// Read in config file
-			utility.readConfig(configFile);
-			client.start_redis_clients(config.settings);
-		}, 60000);
-	}
-		
 });
