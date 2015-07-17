@@ -49,6 +49,19 @@ function start(oSettings) {
 		server.start_tcp_servers(oSettings, parse_data);
 		server.start_http_servers(oSettings);
 	});
+	
+	/*
+	 * 	Reload config
+	 */
+	if ( config.settings.app.auto_reload_config == true ) {
+		// Refresh config
+		setInterval( function() {
+			if (logger.logLevel.info == true) { logger.log.info('Refreshing config'); }
+			// Read in config file
+			utility.readConfig(config.configFile);
+			client.start_redis_clients(config.settings);
+		}, 60000);
+	}
 }
 
 function init_schemas() {
