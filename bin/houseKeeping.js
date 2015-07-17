@@ -117,6 +117,7 @@ function start(oSettings) {
 		// server.start_http_servers(oSettings);
 		
 		// Aggregate metrics
+		aggregate_metrics();
 		setInterval( function() {
 			console.log('aggregating metric');
 			aggregate_metrics();
@@ -129,6 +130,8 @@ function init_slot_lookup(redis_config) {
 	
 
 	if (config.app_data.logger.logLevel.info == true) { config.app_data.logger.log.info('Initializing Slots'); }
+	
+	
 	for ( var server in redis_config ) {
 		redis_config[server].slots.forEach( function(slots) {
 			var items = slots.split("-");
@@ -152,6 +155,8 @@ function init_slot_lookup(redis_config) {
 			
 		});
 	}
+	
+		
 	
 	// Find all default servers
 	var default_servers = [];
@@ -221,64 +226,7 @@ function init_schemas() {
 		}
 	);
 }
-/*
-function period_string_to_seconds (sPeriod, done) {
-	var pattern = new RegExp(/^([0-9]+)([s,m,h,d,y]):([0-9]+)([s,m,h,d,y])$/);
-	
-	utility.matchRegexp( sPeriod, pattern, function(matched, matches) {
-		if ( matched ) {
-			
-			// Calculate interval in seconds
-			switch(matches[2]) {
-				case 's':
-					var interval = parseInt(matches[1]) * 1;
-					break;
-				case 'm':
-					var interval = parseInt(matches[1]) * 60;
-					break;
-				case 'h':
-					var interval = parseInt(matches[1]) * 3600;
-					break;
-				case 'd':
-					var interval = parseInt(matches[1]) * 86400;
-					break;
-				case 'y':
-					var interval = parseInt(matches[1]) * 31536000;
-					break;
-				default:
-					// No match return null
-			}
-			
-			// Calculate retention in seconds
-			switch(matches[4]) {
-				case 's':
-					var retention = parseInt(matches[3]) * 1;
-					break;
-				case 'm':
-					var retention = parseInt(matches[3]) * 60;
-					break;
-				case 'h':
-					var retention = parseInt(matches[3]) * 3600;
-					break;
-				case 'd':
-					var retention = parseInt(matches[3]) * 86400;
-					break;
-				case 'y':
-					var retention = parseInt(matches[3]) * 31536000;
-					break;
-				default:
-					// No match return null
-			}
-			
-			if ( interval && retention ) {
-				done(interval+':'+retention);
-			}
-		} else {
-			console.log('  no match.');
-		}
-	});
-}
-*/
+
 function aggregate_metrics() {
 	
 	
@@ -314,8 +262,7 @@ function aggregate_metrics() {
 		      				 * 	Remove slot prefix and interval postfix from key
 		      				 */
 		      				var key = item_elements[0].split(":")[1];
-		      				process_metric(key, item_elements[1]);
-		      		//		process_metric(item_elements[0], item_elements[1]);
+		      				process_metric(item_elements);
 		      			}
 		      		});
 		      		
@@ -329,7 +276,11 @@ function aggregate_metrics() {
 			});
 		}
 		
-		function process_metric(key, interval) {
+		function process_metric(composite_key) {
+			
+			var slot = composite_key[0];
+			var key = composite_key[1];
+			var interval = composite_key[2];
 			
 			// Lookup schema retention for metric key
 			lookup_schema( key, function(schema) {
@@ -363,26 +314,19 @@ function aggregate_metrics() {
 						
 						if ( action == 'agg' ) {
 							// get, aggregate, delete datapoints
-							config.app_data.redis_clients[server].client.zrangebyscore([key+':'+interval, 0, cutoff_time], function(err, reply) {
+							config.app_data.redis_clients[server].client.zrangebyscore([slot+':'+key+':'+interval, 0, cutoff_time], function(err, reply) {
 								if (err) { 
 									if (logger.logLevel.error == true) { logger.log.error('Error reading from Redis server: '+server); }
 								}
 								else { 
-									
-								//	console.log('key: '+key+', action: '+action);
-								//	console.log('  num_agg_datapoints: '+num_agg_datapoints);
-								//	console.log('  schema_interval: '+schema_interval+', schema_retention: '+schema_retention);
-								//	console.log('  next_schema_interval: '+next_schema_interval+', next_schema_retention: '+next_schema_retention);
-									
+																	
 									var values = reply.toString().split(",");
-								//	console.log('  values.length: '+values.length);
 									
 									while (values.length > 0 ) {
 										var agg_datapoint = 0;
 										var elements = values.splice(0,num_agg_datapoints);
 										var timestamp = 0;
 										
-										// console.log('key: '+key+', elements: '+elements);
 										
 										if ( elements.length == num_agg_datapoints ) {
 											elements.forEach( function( element) {
@@ -394,11 +338,11 @@ function aggregate_metrics() {
 											
 											// write new aggregated data back to redis
 											var payload = [];
-											payload.push(key+':'+next_schema_interval, timestamp, agg_datapoint+':'+timestamp);
+											payload.push(slot+':'+key+':'+next_schema_interval, timestamp, agg_datapoint+':'+timestamp);
 											app_utils.write_to_redis(key, payload);
 											
 											// delete old data from current retention period
-											config.app_data.redis_clients[server].client.zremrangebyscore([key+':'+interval, 0, timestamp], function(err, reply) {
+											config.app_data.redis_clients[server].client.zremrangebyscore([slot+':'+key+':'+interval, 0, timestamp], function(err, reply) {
 												if (err) { 
 													if (logger.logLevel.error == true) { logger.log.error('Error reading from Redis server: '+server); }
 												}
@@ -417,12 +361,12 @@ function aggregate_metrics() {
 						}
 						if ( action == 'del' ) {
 							// delete datapoints
-							config.app_data.redis_clients[server].client.zremrangebyscore([key+':'+interval, 0, cutoff_time], function(err, reply) {
+							config.app_data.redis_clients[server].client.zremrangebyscore([slot+':'+key+':'+interval, 0, cutoff_time], function(err, reply) {
 								if (err) { 
 									if (logger.logLevel.error == true) { logger.log.error('Error reading from Redis server: '+server); }
 								}
 								else {
-									console.log('deleted: '+reply+' datapoints from: '+key+':'+interval+', cutoff_time: '+cutoff_time);
+									console.log('deleted: '+reply+' datapoints from: '+slot+':'+key+':'+interval+', cutoff_time: '+cutoff_time);
 								}
 							});
 						}
