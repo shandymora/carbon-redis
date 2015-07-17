@@ -4,7 +4,8 @@
  * 
  */
 
-var os		= require('os');
+var os			= require('os');
+var currentDir 	= __dirname;
 
 // Export variables/functions
 exports.health = {
@@ -18,7 +19,8 @@ exports.health = {
 	}
 };
 
-exports.currentDir = __dirname;
+exports.currentDir = currentDir;
+exports.configFile = currentDir+'/../conf/config.json';
 exports.my_hostname = os.hostname();
 exports.settings = {};
 exports.app_data = {};
