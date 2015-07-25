@@ -261,7 +261,7 @@ function aggregate_metrics() {
 		      				/*
 		      				 * 	Remove slot prefix and interval postfix from key
 		      				 */
-		      				var key = item_elements[0].split(":")[1];
+		      			//	var key = item_elements[0].split(":")[1];
 		      				process_metric(item_elements);
 		      			}
 		      		});
@@ -338,7 +338,7 @@ function aggregate_metrics() {
 											
 											// write new aggregated data back to redis
 											var payload = [];
-											payload.push(slot+':'+key+':'+next_schema_interval, timestamp, agg_datapoint+':'+timestamp);
+											payload.push(key+':'+next_schema_interval, timestamp, agg_datapoint+':'+timestamp);
 											app_utils.write_to_redis(key, payload);
 											
 											// delete old data from current retention period
