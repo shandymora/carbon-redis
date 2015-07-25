@@ -201,7 +201,6 @@ function metrics( response, request ) {
 		      		response.end(JSON.stringify({status:"error",message:"No target, from and until parameters",issued:utility.timeInSecs()}));
 				}
 			} else {
-				console.log('metrics, query in requestURL');
 				response.writeHeader("Content-Type", "application/json");
 	      		response.writeHead(400);
 	      		response.end(JSON.stringify({status:"error",message:"No Query parameters",issued:utility.timeInSecs()}));
@@ -504,10 +503,8 @@ function metricnames( response, request ) {
 		      		});
 		      		
 		      		if (items[0] != "0") {
-		      //			metrics = metrics.concat(items.slice(1));
 		      			done(items[0], done);
 		      		} else {
-		      //			metrics = metrics.concat(items.slice(1));
 		      			finished_getting_metricsnames();
 		      		}
 				}
@@ -516,8 +513,142 @@ function metricnames( response, request ) {
 	}
 }
 
+function find_metricnames ( response, request ) {
+	var requestData = '';
+	  
+	request.on('data', function(data) {
+      requestData += data;
+    });
+    
+    request.on('end', function() {
+
+    	// Is request body JSON
+		var isJSON = false;
+		try {
+			var requestDataQuery = $.parseJSON(requestData.toString());
+			isJSON = true;
+
+		} catch (error) {
+			isJSON = false;
+		}
+		
+		// Is requestBody a querystring
+		if ( isJSON == false ) {
+	    	try {
+	    		var requestDataQuery = querystring.parse(requestData);
+	    	} catch (err) {
+	    		if (logger.logLevel.error == true) { logger.log.error('Error parsing requestData query params'); }
+				response.writeHead(500);
+				response.end(JSON.stringify({status:"error",message:"Error parsing requestData query params",issued:utility.timeInSecs()}));
+	    	}
+		}
+		
+    	if ('url' in request) {
+    		
+    		try {
+			  var requestURL = url.parse(request.url, true);
+			} catch (err) {
+			  if (logger.logLevel.error == true) { logger.log.error('Error parsing URL query params'); }
+			  response.writeHead(400);
+			  response.end(JSON.stringify(consolidated_metrics));
+			}
+			
+			
+			if (requestURL.query) {
+				// Merge requestDataQuery with requestURL.query
+				$.extend(true, requestURL.query, requestDataQuery);
+				
+				if ( ('pattern' in requestURL.query) ) {
+					
+					var query_pattern = requestURL.query.pattern + '*';
+					
+					/*
+					 * 	Scan redis servers for pattern
+					 */
+					var metricnames = [];
+	
+					// Get number of redis servers
+					var redisdb_count = Object.keys(config.app_data.redis_clients).length;
+					
+					var redisdb_client_count = 0;
+					for ( var server in config.app_data.redis_clients ) {
+						
+						get_metricnames(server, query_pattern, function(metrics) {
+							metricnames = metricnames.concat(metrics);
+							redisdb_client_count += 1;
+							if ( redisdb_client_count == redisdb_count ) {
+								
+								// Ensure metrics array contains only unique elements
+								metrics = utility.uniqueArray(metricnames);
+								
+								response.writeHeader("Content-Type", "application/json");
+								response.writeHead(200);
+								response.end(JSON.stringify(metrics));
+							}
+						});
+					}
+	
+				
+				} else {
+					response.writeHeader("Content-Type", "application/json");
+		      		response.writeHead(400);
+		      		response.end(JSON.stringify({status:"error",message:"No pattern specified",issued:utility.timeInSecs()}));
+				}
+				
+			} else {
+				response.writeHeader("Content-Type", "application/json");
+	      		response.writeHead(400);
+	      		response.end(JSON.stringify({status:"error",message:"No Query parameters",issued:utility.timeInSecs()}));
+			}
+		
+		} else {
+    		response.writeHeader("Content-Type", "application/json");
+      		response.writeHead(400);
+      		response.end(JSON.stringify({status:"error",message:"No URL in request",issued:utility.timeInSecs()}));
+    	}
+	});
+	
+	function get_metricnames(server, pattern, finished_getting_metricsnames) {
+		var cursor = '0';
+		var metrics = [];
+		
+		send_scan_command(cursor, send_scan_command);
+		
+		function send_scan_command( cursor, done) {
+			config.app_data.redis_clients[server].client.send_command( 'SCAN', [ cursor, 'MATCH', '*'+pattern ], function(err, reply) {
+				if (err) {
+					if (logger.logLevel.error == true) { logger.log.error('Error reading from Redis server: '+server); }
+		      		console.log('Error reading from server: '+server+'\n');
+		      		console.log(reply);
+		      		finished_getting_metricsnames(metrics);
+				} else {
+		      		var items = reply.toString().split(",");
+		      		
+		      		// process items
+		      		items.forEach( function(item, item_index) {
+		      			if ( item_index == 0 ) { return; }
+		      			if ( item == "" ) {
+		      				items.splice(item_index, 1);
+		      			} else {
+		      				var item_elements = item.split(":");
+		      				metrics.push(item_elements[1]);
+		      			}
+		      		});
+		      		
+		      		if (items[0] != "0") {
+		      			done(items[0], done);
+		      		} else {
+		      			finished_getting_metricsnames(metrics);
+		      		}
+				}
+			});
+		}
+	}
+}
+
 // Export variables/functions
 exports.appHealth = appHealth;
 exports.sendfile = sendfile;
 exports.metrics = metrics;
 exports.metricnames = metricnames;
+exports.find_metricnames = find_metricnames;

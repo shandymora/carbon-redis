@@ -12,7 +12,8 @@ var handle = {
 	"/" : 				handlers.start,
   	"/health":  		handlers.appHealth,
   	"/metrics":			handlers.metrics,
-  	"/metricnames": 	handlers.metricnames
+  	"/metricnames": 	handlers.metricnames,
+  	"/findmetricnames": handlers.find_metricnames
 };
 
 function route(pathname, response, request) {
